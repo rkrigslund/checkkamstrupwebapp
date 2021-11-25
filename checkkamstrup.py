@@ -4,6 +4,9 @@
 Created on Wed Nov 17 22:45:16 2021
 
 @author: rkr
+
+A simple app that wraps the functionality of www.check.kamstrup.com
+enables the inclusion of specific manufacturer IDs and downloading the results as a csv-file.
 """
 import pandas as pd
 import requests
@@ -12,17 +15,15 @@ import streamlit as st
 @st.cache
 def convert_df(df):
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
-    return df.to_csv(index=False).encode('utf-8')
+    return df.to_csv(index=False, sep=';').encode('utf-8')
 
 kamstrup_man_ids = pd.Series(['KAM','KAW','KAH','KAS'])
 
-serial = st.number_input('Type a serial to test on check.kamstrup.com:', min_value=0, max_value=99999999)
-man_ids = st.multiselect('Select applicable Manufacturer IDs', options=['KAM','KAW','KAH','KAS'], default=kamstrup_man_ids.to_list())
+serial = st.number_input('Type a serial to test (Similar to check.kamstrup.com):', min_value=0, max_value=99999999)
+man_ids = st.multiselect('Select applicable Manufacturer IDs', options=kamstrup_man_ids.to_list(), default=['KAM','KAW'])
 
 
 url=f'https://rs-app.kamstrup.com/product_centric/connection_overview/v1/{serial}?listOfManufacturerIDs={",".join(man_ids)}'
-
-#71256409
 
 req = requests.get(url)
 json_obj = req.json()
@@ -40,6 +41,7 @@ else:
     
     links.informationTimestamp = pd.to_datetime(links.informationTimestamp, unit='s', utc=True)
     st.markdown(f"Links: **{links.shape[0]}**")
+    
     # Show the table
     links_to_web = links[['serialNumber', 'manufacturerID', 'productClass', 'informationTimestamp', 'rssi']]
     links_to_web.rename(columns={'serialNumber': 'Serial',
